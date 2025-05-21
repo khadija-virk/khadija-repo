@@ -1,0 +1,220 @@
+#include <iostream>
+#include <string>
+#include <limits>
+using namespace std;
+
+struct Expense {
+    string name;
+    double amount;
+    Expense* next;
+
+    Expense(string n, double a) : name(n), amount(a), next(nullptr) {}
+};
+
+struct Month {
+    string monthName;
+    Expense* expenseHead;
+    Month* next;
+
+    Month(string name) : monthName(name), expenseHead(nullptr), next(nullptr) {}
+};
+
+class ExpenseTracker {
+private:
+    Month* head;
+
+public:
+    ExpenseTracker() : head(nullptr) {}
+
+    // Create or get existing month node
+    Month* getOrCreateMonth(const string& monthName) {
+        Month* temp = head;
+        while (temp) {
+            if (temp->monthName == monthName)
+                return temp;
+            temp = temp->next;
+        }
+        // Not found, create new
+        Month* newMonth = new Month(monthName);
+        newMonth->next = head;
+        head = newMonth;
+        return newMonth;
+    }
+
+    // Add expense
+    void addExpense(const string& month, const string& name, double amount) {
+        Month* m = getOrCreateMonth(month);
+        Expense* newExpense = new Expense(name, amount);
+        newExpense->next = m->expenseHead;
+        m->expenseHead = newExpense;
+    }
+
+    // Update expense
+    void updateExpense(const string& month, const string& name, double newAmount) {
+        Month* m = head;
+        while (m) {
+            if (m->monthName == month) {
+                Expense* e = m->expenseHead;
+                while (e) {
+                    if (e->name == name) {
+                        e->amount = newAmount;
+                        cout << "Expense updated.\n";
+                        return;
+                    }
+                    e = e->next;
+                }
+                cout << "Expense not found.\n";
+                return;
+            }
+            m = m->next;
+        }
+        cout << "Month not found.\n";
+    }
+
+    // Delete expense
+    void deleteExpense(const string& month, const string& name) {
+        Month* m = head;
+        while (m) {
+            if (m->monthName == month) {
+                Expense* curr = m->expenseHead;
+                Expense* prev = nullptr;
+                while (curr) {
+                    if (curr->name == name) {
+                        if (prev)
+                            prev->next = curr->next;
+                        else
+                            m->expenseHead = curr->next;
+                        delete curr;
+                        cout << "Expense deleted.\n";
+                        return;
+                    }
+                    prev = curr;
+                    curr = curr->next;
+                }
+                cout << "Expense not found.\n";
+                return;
+            }
+            m = m->next;
+        }
+        cout << "Month not found.\n";
+    }
+
+    // Read all expenses
+    void showAll() {
+        Month* m = head;
+        while (m) {
+            cout << "\nMonth: " << m->monthName << endl;
+            Expense* e = m->expenseHead;
+            while (e) {
+                cout << "  - " << e->name << ": $" << e->amount << endl;
+                e = e->next;
+            }
+            m = m->next;
+        }
+    }
+
+    // Display most expensive item in a month
+    void mostExpensiveInMonth(const string& month) {
+        Month* m = head;
+        while (m) {
+            if (m->monthName == month) {
+                Expense* e = m->expenseHead;
+                if (!e) {
+                    cout << "No expenses recorded in this month.\n";
+                    return;
+                }
+                Expense* maxExp = e;
+                while (e) {
+                    if (e->amount > maxExp->amount)
+                        maxExp = e;
+                    e = e->next;
+                }
+                cout << "Most expensive item in " << month << ": " << maxExp->name << " ($" << maxExp->amount << ")\n";
+                return;
+            }
+            m = m->next;
+        }
+        cout << "Month not found.\n";
+    }
+
+    ~ExpenseTracker() {
+        while (head) {
+            Month* tempMonth = head;
+            Expense* e = head->expenseHead;
+            while (e) {
+                Expense* tempExp = e;
+                e = e->next;
+                delete tempExp;
+            }
+            head = head->next;
+            delete tempMonth;
+        }
+    }
+};
+
+void menu() {
+    cout << "\nExpense Tracking System\n";
+    cout << "1. Add Expense\n";
+    cout << "2. Update Expense\n";
+    cout << "3. Delete Expense\n";
+    cout << "4. Show All Expenses\n";
+    cout << "5. Show Most Expensive Item in Month\n";
+    cout << "6. Exit\n";
+    cout << "Choose an option: ";
+}
+
+int main() {
+    ExpenseTracker tracker;
+    int choice;
+    string month, name;
+    double amount;
+
+    do {
+        menu();
+        cin >> choice;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        switch (choice) {
+        case 1:
+            cout << "Enter month: ";
+            getline(cin, month);
+            cout << "Enter expense name: ";
+            getline(cin, name);
+            cout << "Enter amount: ";
+            cin >> amount;
+            tracker.addExpense(month, name, amount);
+            break;
+        case 2:
+            cout << "Enter month: ";
+            getline(cin, month);
+            cout << "Enter expense name: ";
+            getline(cin, name);
+            cout << "Enter new amount: ";
+            cin >> amount;
+            tracker.updateExpense(month, name, amount);
+            break;
+        case 3:
+            cout << "Enter month: ";
+            getline(cin, month);
+            cout << "Enter expense name to delete: ";
+            getline(cin, name);
+            tracker.deleteExpense(month, name);
+            break;
+        case 4:
+            tracker.showAll();
+            break;
+        case 5:
+            cout << "Enter month: ";
+            getline(cin, month);
+            tracker.mostExpensiveInMonth(month);
+            break;
+        case 6:
+            cout << "Exiting...\n";
+            break;
+        default:
+            cout << "Invalid choice. Try again.\n";
+        }
+    } while (choice != 6);
+
+    return 0;
+}
